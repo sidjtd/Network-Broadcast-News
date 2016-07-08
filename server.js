@@ -1,50 +1,33 @@
+'use strict';
+const net = require('net');
 const fs = require('fs');
+const logFile = fs.createWriteStream('./server.log');
+let users = [];
 
-//When connection happens, socket is created and stays open until it is closed by the user
-var chatArray = [];
-
-var idNum = 1;
-var userId = 'Guest';
-
-const server = net.createServer((socket) => {
-  //BAD
-  //This doesn't add idNum for some reason?
-  socket.user = userId+idNum+": ";
-  idNum += 1;
-
-  chatArray.push(socket);
-  socket.on('data', (data) => {
-    if(socket.user===undefined){
-      socket.user = data.toString().replace(/(\r\n|\n|\r)/gm,"");
-      return;
-    }
-
-
-
-  for(var i = 0; i < users.length; i++){
-
-  }
-  console.log((new Date())+'S: A client connected to server...');
-    var string = (data.toString());
-    console.log("test",userId+string);
+const server = net.createServer((socket)=>{
+    users.push(socket);
+    console.log('Client Connected');
+    socket.on('data', ( data ) => {
+      if(socket.name === undefined){
+        socket.name = data.toString().replace(/(\r\n|\n|\r)/gm,"");
+                    //This crazy thing is a regex that removes the INVISIBLE \N break!
+        return;
+      }
+      for (var i = 0; i < users.length; i++) {
+        if(users[i] !== socket){ //if sender is same as receiver dont send!
+          users[i].write(socket.name + ': ' + data);
+        }
+      }
+      process.stdout.write(socket.name + ': ' + data.toString());
     });
-
-  //Prepping the items for ship out
-
-  //My initial test stuff
-  process.stdout.write("I read this once. ");
-  socket.write('S: Hey Clients. Its server. ');
-  socket.on('data', (data) => {
-  //console.log(data.toString());
-    });
-
-  process.stdin.on('data', (chunk)=>{
-    socket.write(chunk);
-  });
-  //return function for unique user is very bad idea?
-
 });
 
-server.listen('6969', () => {
- console.log('S: Server listening on port 6969');
+process.stdin.on('data', (data) => {
+  for (var i = 0; i < users.length; i++) {
+    users[i].write('[ADMIN]: ' + data);
+  }
+});
+
+server.listen('6969', () =>{
+  console.log('Server listening on port:6969');
 });
